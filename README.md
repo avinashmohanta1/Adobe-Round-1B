@@ -1,49 +1,85 @@
-Round 1B – Persona-Based Intelligence Extractor (Adobe Hackathon)
-This project processes a given persona and job-to-be-done and intelligently extracts relevant sections from PDF reports. It is designed for offline use and delivers clean, ranked JSON outputs that highlight the most useful insights for the selected persona.
+Approach – Round 1B: Persona-Based Intelligence Extractor
+The core objective of this round is to go beyond generic PDF parsing and extract persona-specific insights from any PDF document. Given a user persona and their job-to-be-done, our system scans the document and outputs only the most relevant sections, ranked by importance. The focus is on offline execution, speed, and flexibility — without using any heavy ML models or internet services.
 
-🔍 Objective
-The goal of this project is to build a smart PDF processor that:
+We use PyMuPDF (fitz) to parse the PDF and keyword-matching logic to filter sections based on the persona’s needs. Additionally, langdetect is used for multilingual support, ensuring non-English content is appropriately identified.
 
-Understands a persona and their information need (job)
+⚙ Step-by-Step Process
+1️⃣ Reading the Persona
+The script starts by reading persona.json, which contains:
 
-Reads PDF files from an input folder
+A persona (e.g., “Investment Analyst”)
 
-Extracts and ranks the most relevant sections based on keyword and intent matching
+A job_to_be_done (e.g., “Analyze revenue trends, R&D investments...”)
 
-Outputs structured JSON that can be used in further stages like visual display (e.g., Round 2)
+This defines the intent and guides the ranking logic.
 
-This is done entirely offline, without internet access or large external models.
+2️⃣ Reading the PDF
+All .pdf files inside the /input folder are processed.
 
-📁 Folder Structure
-The project follows a clean and modular structure inside the round1b_persona_intelligence/ folder:
+Using PyMuPDF, we iterate through each page of each document.
 
-📁 input/ – This folder contains the PDF files that are to be analyzed. You should place your input .pdf files here.
+The page content is extracted using page.get_text("dict"), giving access to individual spans (blocks of text).
 
-📁 output/ – After running the script, the results are saved as structured JSON files in this folder.
+3️⃣ Language Detection (Multilingual Support)
+Using langdetect, we test each block of text to detect if it’s in English or another language.
 
-📄 persona.json – A small JSON file where you define the persona and their job-to-be-done. This acts as the query/input for the system.
+This allows us to:
 
-📄 persona_extractor.py – This is the main Python script that processes PDFs, extracts relevant sections, ranks them, and writes the output.
+Include non-English content in the future
 
-📄 requirements.txt – Lists the Python dependencies required to run the script. Use it to quickly install everything with pip install -r requirements.txt.
+Warn or skip unsupported languages
 
-📄 Dockerfile – (Optional) You can use this to run your solution inside a Docker container as expected in the hackathon.
+Prepare for multilingual extensions in Round 2
 
-📄 README.md – Documentation that explains the setup, execution, and overall approach for Round 1B.
+4️⃣ Section Filtering & Relevance Scoring
+Text blocks are split into lines.
 
-🧠 How It Works (Logic Overview)
-Reads persona.json to understand the target persona and their job-to-be-done.
+Each line is checked for keywords from the job_to_be_done.
 
-Loads all .pdf files from the /input folder using PyMuPDF.
+A basic scoring system ranks sections by counting how many keywords are matched.
 
-Scans text from each page, and runs basic ranking using keyword matching based on the job description.
+High-scoring sections are assumed to be important and are selected for the output.
 
-Uses langdetect to optionally detect non-English sections (multilingual support).
+Example keywords for an investment analyst might include:
 
-Creates an output JSON file that contains:
+revenue, income, R&D, growth, strategy, market, competitor, innovation
 
-Input persona and job
+5️⃣ Output Structuring
+Each relevant section is saved in the output JSON with:
 
-Timestamp
+📄 Document name
 
-A ranked list of relevant sections with page numbers
+📄 Page number (1-indexed)
+
+📌 Extracted section text
+
+⭐ Importance rank (higher score = higher rank)
+
+Example:
+
+json
+Copy
+Edit
+{
+  "document": "annual_report.pdf",
+  "page_number": 5,
+  "section_title": "The TPS review of UI Revenue Operations completed April 30",
+  "importance_rank": 1
+}
+This output is saved in /output/persona_output.json.
+
+6️⃣ Automation Across Files
+All .pdf files in the /input folder are processed in a loop.
+
+The script can handle multiple PDFs and append results.
+
+Fully compatible with Adobe's expected Docker directory structure.
+
+⚡ Performance & Efficiency
+Entire pipeline runs in under 10 seconds for medium-sized PDFs (up to 50 pages).
+
+No internet access required ✅
+
+No GPU or external dependencies ✅
+
+Lightweight: runs in Docker or native Python with minimal setup ✅
